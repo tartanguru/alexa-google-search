@@ -33,9 +33,16 @@ Whilst the skill will return weather forecasts, these will default to either Wes
 These are supplied further down this page and these are always upto date. There are common fault finding steps.
 
 ## Video Guide to installation
+
+ENGLISH
 Paul Hibbert has produced a very good video guide demoing the skill and going through the setup process. If you follow his guide then you will need to ensure you select either N.Virginia or Europe(Ireland) lambda node, which isn't explicitly mentioned in his gude:-
 
 https://www.youtube.com/watch?v=PR-LVPMU7F4&feature=youtu.be
+
+DEUTSCHE.
+Venix hat hier einen deutschen Video-Guide produziert: -
+
+https://www.youtube.com/watch?v=MlNs23J4e8E
 
 ##  Pictorial Guide to installation
 
