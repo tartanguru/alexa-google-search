@@ -297,8 +297,17 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     var eventTime = $('._Fc>._hg',body).eq(1).text()+'';
                     console.log("Event Time is " + eventTime)
                     
-                    var isItFinal = (result.includes( "Final ") || result.includes( "Finale ")) ;  // Check whether this is the final result in English or German               
-                    var isItLive = result.includes("Live "); // Check whether this is a live event
+                    // flag as cricket if there is a cricket score shown (future matches are handled same as other sports)
+                    var isCricket = $('._OMb>._t',body).length > 0;
+                    
+                    if (isCricket) {
+                    	var isItFinal = $('._Fc>._Pc',body).length > 0; // a final result is summarised in this section
+                		var isItLive = !isItFinal; // otherwise a live game 
+					}
+					else {
+						var isItFinal = (result.includes( "Final ") || result.includes( "Finale ")) ;  // Check whether this is the final result in English or German        
+                    	var isItLive = result.includes("Live "); // Check whether this is a live event
+					}
 
                     var eventParamsNum = $('._Fc>._hg',body).length; // check for number of _hg elements that contain information aboutthe game
                     console.log("Number of elements is " +eventParamsNum);
@@ -328,68 +337,37 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                         console.log("Venue is " + eventVenue);
                     }
                     
-                    if (result.includes( "vs.")) {
-                        
-                        
-                        
-                        // this rule looks for a cricket match
-                        
-                        if (isItLive === true) { //likely to be a cricket match
-                            
-                            found = "Cricket Match :" + result + eventLeague + " : " + eventTime + eventVenue ;
-                        // more handling to be added for cricket
-                        
-                        } else { 
-                            
+                    if (result.includes( "vs.") && !isCricket) {    
                         // for football and most other sports assume this is a future match
                         found = localeResponse[15] + result + eventLeague + " : " + eventTime + eventVenue ; 
-                        }
-                        
-
-                        
                     } else {
+                        // If it is a request for a past or present score     
+                        found = localeResponse[8];
 
-                        // If it is a request for a past or present score
-
-                              
-                        result = result.split(' - ').join('*DASH*')// convert dashes to make them easier to deal with using regex
-                        result = result.split(/\bLive\*DASH\*[0-9]+\b/g).join(''); // Deal with Live scores
-                        result = result.split('Final').join(''); // Remove final word
-                        console.log("Event Time is " + eventTime)
-                        console.log("Result RAW is" + result)
-
-                        found =localeResponse[8];
-
-                        var scoreTotal = result.match(/[0-9]+\*DASH\*[0-9]+/g)+''; // Find score element
-                        console.log("ScoreTotal is: " + scoreTotal);
-
-                        if (scoreTotal == null) {return}
-                        var scoreBreakdown = scoreTotal.split('*DASH*'); // split score into two halves
-                        if (scoreBreakdown == null) {return}
-                        console.log("Score Breakdown is " + scoreBreakdown)
-                        var scoreFirst = scoreBreakdown[0]; // Take first half as team 1's score
-                        console.log ("First score is " + scoreFirst)
-                        var scoreSecond = scoreBreakdown[1]; // Take second half as team 2's score
-                        console.log ("FSecond score is " + scoreSecond)
-                        var teams = result.split(/[0-9]+\*DASH\*[0-9]+/g); 
-                        console.log("Teams are: "+ teams)
-                        var teamFirst = teams[0];
-                        teamFirst = teamFirst.split(/\([0-9]+-[0-9]+\)/g).join(''); // get rid of any other information in brackets in team names
-                        var teamSecond = teams[1];
-                        teamSecond = teamSecond.split(/\([0-9]+-[0-9]+\)/g).join(''); // get rid of any other information in brackets in team names
-
-                        if (isItFinal == true ){
-                            
-                            found = localeResponse[13] + eventTime + localeResponse[14] + teamFirst + " " +scoreFirst +", " + teamSecond + " "+ scoreSecond ;
-
-
-                        } else {
-                            
-                            //result = result.split('Final').join('');
-                            found = localeResponse[12] + teamFirst + " " +scoreFirst +", " + teamSecond + " "+ scoreSecond ;
-                           
-                        }               
+                        var scoreTotal = $('._VMb>._UMb',body).text(); // Find score element
+                    	var status = $('._VMb>._UMb>._hg>span',body).text(); // Get the games status e.g. final, live, half-time, stumps
+                    	var teamFirst = $('._wS',body).eq(0).text(); // Find first team
+						var teamSecond = $('._wS',body).eq(1).text(); // Find the second team
                         
+                        if (isCricket) {
+                            // process the cricket score
+                            found = formatCricketScore(body, teamFirst, teamSecond, isItLive, status, eventLeague, eventTime);   
+                        }
+                        else {
+                            // Process temas and score
+							scoreTotal = scoreTotal.replace(status, ""); // Remove status so we just have the score
+							scoreTotal = scoreTotal.replace(/ - /g, '*DASH*') // Replace the dash to make processing easier
+							var scoreBreakdown = scoreTotal.split('*DASH*'); // split score into two halves
+							var scoreFirst = scoreBreakdown[0]; // Take first half as team 1's score
+							var scoreSecond = scoreBreakdown[1]; // Take second half as team 2's score
+                            
+                            if (isItFinal == true ){
+                                found = localeResponse[13] + eventTime + localeResponse[14] + teamFirst + " " +scoreFirst +", " + teamSecond + " "+ scoreSecond ;
+                            } else {
+                                //result = result.split('Final').join('');
+                                found = localeResponse[12] + teamFirst + " " +scoreFirst +", " + teamSecond + " "+ scoreSecond ;
+                            }               
+                        }
                     }
 
 
@@ -612,6 +590,189 @@ AlexaGoogleSearch.prototype.intentHandlers = {
         var speechOutput = "";
         response.tell(speechOutput);
     }
+}
+
+// format a cricket score, handles ODIs and T20s differently from test matches
+function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, eventLeague, eventTime) {
+    var scoreFirstDeclared = false, scoreSecondDeclared = false, scoreThirdDeclared = false, scoreFourthDeclared = false;
+    var scoreFirstAllOut = false, scoreSecondAllOut = false, scoreThirdAllOut = false, scoreFourthAllOut = false;
+    var scoreFirstOvers = 0, scoreSecondOvers = 0;
+    //var innings = $('._OMb>._t>',body).length;
+    //var isTestMatch = (innings == 2); // only a test match has a set of scores for each innings
+    var isT20 = eventLeague.includes("T20");
+    var isODI = eventLeague.includes("ODI");
+    var isTestMatch = !isT20 && !isODI;
+
+    // format the score for innings 1
+    var scoreFirst = $('._OMb>._t>tr>._Hg._if',body).eq(0).text();
+    console.log("First score is: " + scoreFirst);
+    // handle a declared innings
+    if (scoreFirst.includes("d")) {
+        scoreFirst = scoreFirst.replace("d", "");
+        scoreFirstDeclared = true;
+        console.log("First innings declared");
+    }
+    // handle all out
+    if (scoreFirst.includes("/10")) {
+        scoreFirst = scoreFirst.replace("/10", " all out");
+        scoreFirstAllOut = true;
+        console.log("First innings all out");
+    }
+    scoreFirst = scoreFirst.replace("/", " for "); // make the wickets readable
+    var oversExtract = scoreFirst.match(/\(([^)]+)\)/); // extract the number of overs
+    if (oversExtract) {
+        // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
+        var overs = oversExtract[1];
+        scoreFirstOvers = overs;
+        scoreFirst = scoreFirst.replace(/ \(.+\)/g, (scoreFirstDeclared ? " declared" : "") + ((isTestMatch && isItLive) ? " in the first innings" : "") + ", after " + overs + " overs");
+    }
+
+    // format the score for innings 2
+    var scoreSecond = $('._OMb>._t>tr>._Hg._jf',body).eq(0).text();
+    console.log("Second score is: " + scoreSecond);
+    // handle a declared innings
+    if (scoreSecond.includes("d")) {
+        scoreSecond = scoreSecond.replace("d", "");
+        scoreSecondDeclared = true;
+        console.log("Second innings declared");
+    }
+    // handle all out
+    if (scoreSecond.includes("/10")) {
+        scoreSecond = scoreSecond.replace("/10", " all out");
+        scoreSecondAllOut = true;
+        console.log("Second innings all out");
+    }
+    scoreSecond = scoreSecond.replace("/", " for "); // make the wickets readable
+    oversExtract = scoreSecond.match(/\(([^)]+)\)/); // extract the number of overs
+    if (oversExtract) {
+        // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
+        var overs = oversExtract[1];
+        scoreSecondOvers = overs;
+        scoreSecond = scoreSecond.replace(/ \(.+\)/g, (scoreSecondDeclared ? " declared" : "") + ((isTestMatch && isItLive) ? " in the first innings" : "") + ", after " + overs + " overs");
+    }
+
+    // format the score for innings 3 (test match only)
+    var scoreThird = $('._OMb>._t>tr>._Hg._if',body).eq(1).text();
+    if (scoreThird.length > 0)
+        console.log("Third score is: " + scoreThird);
+    // handle a declared innings
+    if (scoreThird.includes("d")) {
+        scoreThird = scoreThird.replace("d", "");
+        scoreThirdDeclared = true;
+        console.log("Third innings declared");
+    }
+    // handle all out
+    if (scoreThird.includes("/10")) {
+        scoreThird = scoreThird.replace("/10", " all out");
+        scoreThirdAllOut = true;
+        console.log("Third innings all out");
+    }
+    scoreThird = scoreThird.replace("/", " for "); // make the wickets readable
+    oversExtract = scoreThird.match(/\(([^)]+)\)/); // extract the number of overs
+    if (oversExtract) {
+        // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
+        var overs = oversExtract[1];
+        scoreThird = scoreThird.replace(/ \(.+\)/g, (scoreThirdDeclared ? " declared" : "") + (isItLive ? " in the second innings" : "") + ", after " + overs + " overs");
+    }
+
+    // format the score for innings 4 (test match only)
+    var scoreFourth = $('._OMb>._t>tr>._Hg._jf',body).eq(1).text();
+    if (scoreFourth.length > 0)
+        console.log("Fourth score is: " + scoreFourth);
+    // handle a declared innings
+    if (scoreFourth.includes("d")) {
+        scoreFourth = scoreFourth.replace("d", "");
+        scoreFourthDeclared = true;
+        console.log("Fourth innings declared");
+    }
+    // handle all out
+    if (scoreFourth.includes("/10")) {
+        scoreFourth = scoreFourth.replace("/10", " all out");
+        scoreFourthAllOut = true;
+        console.log("Fourth innings all out");
+    }
+    scoreFourth = scoreFourth.replace("/", " for "); // make the wickets readable
+    oversExtract = scoreFourth.match(/\(([^)]+)\)/); // extract the number of overs
+    if (oversExtract) {
+        // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
+        var overs = oversExtract[1];
+        scoreFourth = scoreFourth.replace(/ \(.+\)/g, (scoreFourthDeclared ? " declared" : "") + (isItLive ? " in the second innings" : "") + ", after " + overs + " overs");
+    }
+
+    // create the output
+    var speechOutput;
+    var matchFormat = isT20 ? "T.Twenty" : isODI ? "One Day International" : "Test Match";
+    if (isItLive) {
+        // format for T20 and ODI is 'Team are xxx/n' or 'Team are xxx/n chasing yyy/n'
+        var currentScore;
+        if (isT20 || isODI) {
+            if (scoreFirst == "Yet to bat")
+                currentScore = teamSecond + " " + scoreSecond;
+            else if (scoreSecond == "Yet to bat")
+                currentScore = teamFirst + " " + scoreFirst;
+            else {
+                if (parseFloat(scoreFirstOvers) > parseFloat(scoreSecondOvers))
+                    currentScore = teamSecond + " " + scoreSecond + ", chasing " + scoreFirst.match(/[0-9]+/)[0];
+                else
+                    currentScore = teamFirst + " " + scoreFirst + ", chasing " + scoreSecond.match(/[0-9]+/)[0];
+            }
+        }
+
+        // for a test match, only output the score for the team currently batting
+        // involves some convoluted checking of which of the 4 innings are all out or declared
+        if (isTestMatch) {
+            // for a test, scoreFirst and scoreThird belong to Team1, scoreSecond and scoreFourth to Team2
+            if (scoreThird.length == 0 && scoreFourth.length == 0) {
+                // in the first innings
+                if (scoreFirst.length == 0 || scoreFirstDeclared || scoreFirstAllOut) {
+                    if (scoreSecond.length == 0)
+                        currentScore = teamFirst + " " + scoreFirst;   
+                    else
+                        currentScore = teamSecond + " " + scoreSecond;
+                }
+                else
+                    currentScore = teamFirst + " " + scoreFirst;
+            }
+            else {
+                // in the second innings
+                if (scoreThird.length == 0 || scoreThirdDeclared || scoreThirdAllOut) {
+                    if (scoreFourth.length == 0)
+                        currentScore = teamFirst + " " + scoreThird;   
+                    else
+                        currentScore = teamSecond + " " + scoreFourth;
+                }
+                else
+                    currentScore = teamFirst + " " + scoreThird;
+            }
+        }
+
+        if (status == "Live")
+            // for an 'in play' match just format as 'the current score is'
+            speechOutput = "The current score in the " + matchFormat + " is: " + currentScore;
+        else
+            // for other statuses, format as e.g. 'the score at Drinks is'
+            speechOutput = "The score at " + status + " in the " + matchFormat + " is: " + currentScore;
+    } else {
+        eventTime = eventTime.split(",")[0]; // strip out the time of day
+        var seriesStatus = eventLeague.split("- ")[1]; // strip out the bit which says e.g. Test 2 of 3 (may not be a proper series so could return undefined)
+        if (seriesStatus) {
+            // format is x-y-z where x is the winning side score, y is the losing side score and z is the number of draws
+            // we don't care about draws, so just extract the x-y part and replace the dash with a space for readability
+            var seriesScore = seriesStatus.match(/[0-9]-[0-9]/)[0];
+            seriesStatus = seriesStatus.replace(/[0-9]-[0-9]-[0-9]/, seriesScore).replace("-", " ");
+        }
+        var result = $('._Fc>._Pc',body).text(); //  extract the concise result
+
+        if (scoreThird.length > 0)
+            scoreFirst = scoreFirst + " and " + scoreThird;
+        if (scoreFourth.length > 0)
+            scoreSecond = scoreSecond + " and " + scoreFourth;
+        speechOutput = "The final score in the " + matchFormat + ", " + eventTime + " was: " + teamFirst + " " + scoreFirst + ", " + teamSecond + " " + scoreSecond + ". " + result;
+        if (seriesStatus)
+            speechOutput += ", " + seriesStatus;
+    }
+    
+    return speechOutput;
 }
 
 exports.handler = function(event, context) {
