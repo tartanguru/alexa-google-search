@@ -107,6 +107,7 @@ AlexaGoogleSearch.prototype.intentHandlers = {
             speechOutputTemp = speechOutputTemp.split('a.m').join("am") // deal with a.m
             speechOutputTemp = speechOutputTemp.split('p.m').join("pm") // deal with a.m
 
+	    speechOutputTemp = speechOutputTemp.replace(/US (ton\b|Miles |therm|liquid |legal |fluid |tablespoon|teaspoon|customary)/gi, 'U S $1'); // deal with U.S. units
 
               // deal with decimal places
               speechOutputTemp = speechOutputTemp.replace(/\d[\.]{1,}/g,'\$&DECIMALPOINT')// search for decimal points following a digit and add DECIMALPOINT TEXT
