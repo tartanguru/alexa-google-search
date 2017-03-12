@@ -151,8 +151,10 @@ AlexaGoogleSearch.prototype.intentHandlers = {
             speechOutputTemp = speechOutputTemp.replace(/</g, localeResponse[6]); // replace < symbol 
             speechOutputTemp = speechOutputTemp.replace(/""/g, ''); // replace double quotes 
 
-            
-            
+            // Addresses #10 - stripping 'Wikipedia' from the end of result text
+            speechOutputTemp = speechOutputTemp.replace(/. Wikipedia\b/g, '.');
+            cardOutputText   = cardOutputText.replace(/. Wikipedia\b/g, '.');
+
             // Add in SSML pauses
             speechOutputTemp = speechOutputTemp.replace(/SHORTALEXAPAUSERTN/g, '<break time=\"250ms\"/>'); // add in SSML pauses at table ends 
             speechOutputTemp = speechOutputTemp.replace(/SHORTALEXAPAUSE/g, '<break time=\"250ms\"/>'); // add in SSML pauses at table ends
