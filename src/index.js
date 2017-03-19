@@ -30,7 +30,8 @@ var localeResponseEN = [
     "The current Score is:  ",
     "The Final Score, ",
     " was: ",
-    "The next game is "
+    "The next game is ",
+    "According to Wikipedia, "
     
      
 ];
@@ -51,7 +52,8 @@ var localeResponseDE = [
     "Der aktuelle Live Score ist:",
     "Das Finale Ergebnis, ",
     " war: ",
-    "Das nächste Spiel ist "
+    "Das nächste Spiel ist ",
+    "Laut Wikipedia, "
      
 ];
 
@@ -120,6 +122,13 @@ AlexaGoogleSearch.prototype.intentHandlers = {
             speechOutputTemp = speechOutputTemp.replace(/    /g, ' '); // replace quad spaces 
             speechOutputTemp = speechOutputTemp.replace(/   /g, ' '); // replace triple spaces 
             speechOutputTemp = speechOutputTemp.replace(/  /g, ' '); // replace double spaces 
+            
+            // Deal with stray Wikipedia at end of answers
+            if (speechOutputTemp.endsWith("Wikipedia") == true ){
+                console.log("Wikipedia found")
+                var n = speechOutputTemp.lastIndexOf("Wikipedia");
+                speechOutputTemp = localeResponse[16] + speechOutputTemp.substring(0,n);
+            }
 
             
             // Create card text
@@ -159,6 +168,10 @@ AlexaGoogleSearch.prototype.intentHandlers = {
             speechOutputTemp = speechOutputTemp.replace(/ALEXAPAUSE/g, '<break time=\"500ms\"/>'); // add in SSML pauses at table ends 
 			speechOutputTemp = speechOutputTemp.replace(/\./g, ". "); // Assume any remaining dot are concatonated sentances so turn them into full stops with a pause afterwards
 			var speechOutput = speechOutputTemp.replace(/DECIMALPOINT/g, '.'); //Put back decimal points
+            
+            // Get rid of Wikipedia statement at end of answer as it sounds odd
+            
+
             
 						
 			if (speechOutput === "") {
@@ -218,7 +231,7 @@ AlexaGoogleSearch.prototype.intentHandlers = {
 			.then(function(body) {
 				console.log("Running parsing");
 				console.log("Search string is:" + queryString);
-				console.log("HTML is:" + $('#ires', body).html());
+				console.log("HTML is:" + $('#ires', body).html()); // Commented out in released builds for performance but recommended eneabling for testing
 								
 			// result variable init
                 var found = 0;
@@ -261,17 +274,6 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     speakResults(found);
                 }
 
-
-
-                //facts 1
-                if (!found && $('._tXc>span',body).length>0){
-
-                    found = $('._tXc>span',body).html();
-                    console.log("Found facts 1");
-                    found = found.replace(/<\/span>/g, 'ALEXAPAUSE'); // Find end of lines
-                    speakResults(found);
-                }
-
                 //facts 2
                 if (!found && $('._sPg',body).length>0){
 
@@ -279,6 +281,17 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     console.log("Found facts 2");
                     speakResults(found);
                 }
+
+                //facts 1
+                if (!found && $('._tXc>span',body).length>0){
+
+                    found = $('._tXc>span',body).html();
+                    console.log("Found facts 1");
+                    found = found.replace(/<\/span>/g, 'ALEXAPAUSE'); // Find end of lines             
+                    speakResults(found);
+                }
+
+
 
 
                 // sports matches
@@ -329,14 +342,12 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     }
                     
                     if (result.includes( "vs.")) {
-                        
-                        
-                        
+
                         // this rule looks for a cricket match
                         
                         if (isItLive === true) { //likely to be a cricket match
                             
-                            found = "Cricket Match :" + result + eventLeague + " : " + eventTime + eventVenue ;
+                        found = "Cricket Match :" + result + eventLeague + " : " + eventTime + eventVenue ;
                         // more handling to be added for cricket
                         
                         } else { 
@@ -349,47 +360,26 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                         
                     } else {
 
-                        // If it is a request for a past or present score
-
-                              
-                        result = result.split(' - ').join('*DASH*')// convert dashes to make them easier to deal with using regex
-                        result = result.split(/\bLive\*DASH\*[0-9]+\b/g).join(''); // Deal with Live scores
-                        result = result.split('Final').join(''); // Remove final word
-                        console.log("Event Time is " + eventTime)
-                        console.log("Result RAW is" + result)
-
-                        found =localeResponse[8];
-
-                        var scoreTotal = result.match(/[0-9]+\*DASH\*[0-9]+/g)+''; // Find score element
-                        console.log("ScoreTotal is: " + scoreTotal);
-
-                        if (scoreTotal == null) {return}
+                        // Process temas and score
+                        var scoreTotal = $('._VMb>._UMb',body).text(); // Find score element
+                        var status = $('._VMb>._UMb>._hg>span',body).text(); // Get the games status e.g. final or live
+						scoreTotal = scoreTotal.replace(status, ""); // Remove status so we just have the score
+						scoreTotal = scoreTotal.replace(/ - /g, '*DASH*') // Replace the dash to make processing easier
                         var scoreBreakdown = scoreTotal.split('*DASH*'); // split score into two halves
-                        if (scoreBreakdown == null) {return}
-                        console.log("Score Breakdown is " + scoreBreakdown)
                         var scoreFirst = scoreBreakdown[0]; // Take first half as team 1's score
-                        console.log ("First score is " + scoreFirst)
                         var scoreSecond = scoreBreakdown[1]; // Take second half as team 2's score
-                        console.log ("FSecond score is " + scoreSecond)
-                        var teams = result.split(/[0-9]+\*DASH\*[0-9]+/g); 
-                        console.log("Teams are: "+ teams)
-                        var teamFirst = teams[0];
-                        teamFirst = teamFirst.split(/\([0-9]+-[0-9]+\)/g).join(''); // get rid of any other information in brackets in team names
-                        var teamSecond = teams[1];
-                        teamSecond = teamSecond.split(/\([0-9]+-[0-9]+\)/g).join(''); // get rid of any other information in brackets in team names
+                        var teamFirst = $('._wS',body).eq(0).text(); // Find first team
+                        var teamSecond = $('._wS',body).eq(1).text(); // Find the second team
+                        
 
                         if (isItFinal == true ){
                             
                             found = localeResponse[13] + eventTime + localeResponse[14] + teamFirst + " " +scoreFirst +", " + teamSecond + " "+ scoreSecond ;
 
-
-                        } else {
+                        } else {  
                             
-                            //result = result.split('Final').join('');
-                            found = localeResponse[12] + teamFirst + " " +scoreFirst +", " + teamSecond + " "+ scoreSecond ;
-                           
-                        }               
-                        
+                            found = localeResponse[12] + teamFirst + " " +scoreFirst +", " + teamSecond + " "+ scoreSecond ; 
+                        }                
                     }
 
 
