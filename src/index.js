@@ -159,6 +159,7 @@ AlexaGoogleSearch.prototype.intentHandlers = {
             speechOutputTemp = speechOutputTemp.replace(/&/g, localeResponse[5]); // replace ampersands 
             speechOutputTemp = speechOutputTemp.replace(/</g, localeResponse[6]); // replace < symbol 
             speechOutputTemp = speechOutputTemp.replace(/""/g, ''); // replace double quotes 
+            speechOutputTemp = speechOutputTemp.split("\u00B7").join(""); // get rid of middle dots
 
             
             
@@ -491,6 +492,8 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     speakResults(found);
 
                 }
+            
+            
 
 
 
@@ -500,6 +503,52 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     console.log("Found Simple answer");
                     speakResults(found);
 
+                }
+            
+            
+                //local results
+                if (!found && $('._axi',body).length>0){
+                    console.log("Found local results");
+                    found="";
+                                                    
+                    var items = $('._axi',body).get().length; // find how many lines there are in name list                
+                    for (var count = 0; count < items; count++) {
+                        
+                        var result = $('._axi',body).eq(count).html();
+                        result = result.replace('</span> <g-review-stars>',' stars </span> <g-review-stars>');
+                        result = result.split(" \u00B7 ").join(""); // get rid of middle dots
+                        result = result.split('<span class="_PXi">').join('. SHORTALEXAPAUSERTN<span class="_PXi">');
+                        result = result.split("</div><div></div><div>").join('. SHORTALEXAPAUSERTN</div><div></div><div>');
+                        result = result.split("</span></span></div><div>").join('. SHORTALEXAPAUSERTN</span></span></div><div>');
+                        
+                        result = result.split("<span data-ved").join('. SHORTALEXAPAUSERTN <span data-ved');
+                        result = result.split("&#xB7").join('. SHORTALEXAPAUSERTN');
+                        result = result.split('<div class="rllt__wrapped">').join('. SHORTALEXAPAUSERTN<div class="rllt__wrapped">');
+                        
+                        if (result.search(/g-review-stars> \(\d+\)/g) >-1 ){
+
+                            var reviewString = result.match(/g-review-stars> \(\d+\)/g);
+
+                            var reviewCount = reviewString[0].match(/(\d+)/g);
+
+                            var replaceString = "g-review-stars> based upon " + reviewCount[0] + " reviews.";
+
+                            result = result.replace(reviewString[0], replaceString)
+                        }
+                        result = entities.decode(striptags(result));
+                        result = result.split("\u00B7").join(""); // get rid of middle dots
+                        result = result.replace(' £ ', ' Low Cost SHORTALEXAPAUSERTN');
+                        result = result.replace(' ££ ', ' Medium Cost SHORTALEXAPAUSERTN');
+                        result = result.replace(' £££ ', ' High Cost SHORTALEXAPAUSERTN');
+                        result = result.split('No reviews').join('. No Reviews. SHORTALEXAPAUSERTN');
+                        result = result.split('  ').join(' ');
+                        result = result.split('  ').join(' ');
+                        result = result.split('. . ').join('. ');
+                        
+                        
+                        found = found + "Result number "  + (count + 1) +": " + result + "ALEXAPAUSE ALEXAPAUSE SHORTALEXAPAUSERTN SHORTALEXAPAUSERTN";
+                    }
+                    speakResults(found);
                 }
 
                 //Definition
