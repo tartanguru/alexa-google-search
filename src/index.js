@@ -724,8 +724,8 @@ function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, event
             // for a test, scoreFirst and scoreThird belong to Team1, scoreSecond and scoreFourth to Team2
             if (scoreThird.length == 0 && scoreFourth.length == 0) {
                 // in the first innings
-                if (scoreFirst.length == 0 || scoreFirstDeclared || scoreFirstAllOut) {
-                    if (scoreSecond.length == 0)
+                if ((scoreFirst.length == 0 || scoreFirst == "Yet to bat") || scoreFirstDeclared || scoreFirstAllOut) {
+                    if (scoreSecond.length == 0 || scoreSecond == "Yet to bat")
                         currentScore = teamFirst + " " + scoreFirst;   
                     else
                         currentScore = teamSecond + " " + scoreSecond;
@@ -735,8 +735,8 @@ function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, event
             }
             else {
                 // in the second innings
-                if (scoreThird.length == 0 || scoreThirdDeclared || scoreThirdAllOut) {
-                    if (scoreFourth.length == 0)
+                if ((scoreThird.length == 0 || scoreThird == "Yet to bat") || scoreThirdDeclared || scoreThirdAllOut) {
+                    if (scoreFourth.length == 0 || scoreFourth == "Yet to bat")
                         currentScore = teamFirst + " " + scoreThird;   
                     else
                         currentScore = teamSecond + " " + scoreFourth;
