@@ -30,7 +30,8 @@ var localeResponseEN = [
     "The current Score is:  ",
     "The Final Score, ",
     " was: ",
-    "The next game is "
+    "The next game is ",
+    "According to Wikipedia, "
     
      
 ];
@@ -51,7 +52,8 @@ var localeResponseDE = [
     "Der aktuelle Live Score ist:",
     "Das Finale Ergebnis, ",
     " war: ",
-    "Das nächste Spiel ist "
+    "Das nächste Spiel ist ",
+    "Laut Wikipedia, "
      
 ];
 
@@ -120,6 +122,13 @@ AlexaGoogleSearch.prototype.intentHandlers = {
             speechOutputTemp = speechOutputTemp.replace(/    /g, ' '); // replace quad spaces 
             speechOutputTemp = speechOutputTemp.replace(/   /g, ' '); // replace triple spaces 
             speechOutputTemp = speechOutputTemp.replace(/  /g, ' '); // replace double spaces 
+            
+            // Deal with stray Wikipedia at end of answers
+            if (speechOutputTemp.endsWith("Wikipedia") == true ){
+                console.log("Wikipedia found")
+                var n = speechOutputTemp.lastIndexOf("Wikipedia");
+                speechOutputTemp = localeResponse[16] + speechOutputTemp.substring(0,n);
+            }
 
             
             // Create card text
@@ -150,6 +159,7 @@ AlexaGoogleSearch.prototype.intentHandlers = {
             speechOutputTemp = speechOutputTemp.replace(/&/g, localeResponse[5]); // replace ampersands 
             speechOutputTemp = speechOutputTemp.replace(/</g, localeResponse[6]); // replace < symbol 
             speechOutputTemp = speechOutputTemp.replace(/""/g, ''); // replace double quotes 
+            speechOutputTemp = speechOutputTemp.split("\u00B7").join(""); // get rid of middle dots
 
             
             
@@ -159,6 +169,10 @@ AlexaGoogleSearch.prototype.intentHandlers = {
             speechOutputTemp = speechOutputTemp.replace(/ALEXAPAUSE/g, '<break time=\"500ms\"/>'); // add in SSML pauses at table ends 
 			speechOutputTemp = speechOutputTemp.replace(/\./g, ". "); // Assume any remaining dot are concatonated sentances so turn them into full stops with a pause afterwards
 			var speechOutput = speechOutputTemp.replace(/DECIMALPOINT/g, '.'); //Put back decimal points
+            
+            // Get rid of Wikipedia statement at end of answer as it sounds odd
+            
+
             
 						
 			if (speechOutput === "") {
@@ -218,7 +232,7 @@ AlexaGoogleSearch.prototype.intentHandlers = {
 			.then(function(body) {
 				console.log("Running parsing");
 				console.log("Search string is:" + queryString);
-				console.log("HTML is:" + $('#ires', body).html());
+				console.log("HTML is:" + $('#ires', body).html()); // Commented out in released builds for performance but recommended eneabling for testing
 								
 			// result variable init
                 var found = 0;
@@ -261,17 +275,6 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     speakResults(found);
                 }
 
-
-
-                //facts 1
-                if (!found && $('._tXc>span',body).length>0){
-
-                    found = $('._tXc>span',body).html();
-                    console.log("Found facts 1");
-                    found = found.replace(/<\/span>/g, 'ALEXAPAUSE'); // Find end of lines
-                    speakResults(found);
-                }
-
                 //facts 2
                 if (!found && $('._sPg',body).length>0){
 
@@ -279,6 +282,17 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     console.log("Found facts 2");
                     speakResults(found);
                 }
+
+                //facts 1
+                if (!found && $('._tXc>span',body).length>0){
+
+                    found = $('._tXc>span',body).html();
+                    console.log("Found facts 1");
+                    found = found.replace(/<\/span>/g, 'ALEXAPAUSE'); // Find end of lines             
+                    speakResults(found);
+                }
+
+
 
 
                 // sports matches
@@ -341,9 +355,7 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                         // for football and most other sports assume this is a future match
                         found = localeResponse[15] + result + eventLeague + " : " + eventTime + eventVenue ; 
                     } else {
-                        // If it is a request for a past or present score     
-                        found = localeResponse[8];
-
+                        // Process teams and score
                         var scoreTotal = $('._VMb>._UMb',body).text(); // Find score element
                     	var status = $('._VMb>._UMb>._hg>span',body).text(); // Get the games status e.g. final, live, half-time, stumps
                     	var teamFirst = $('._wS',body).eq(0).text(); // Find first team
@@ -475,6 +487,8 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     speakResults(found);
 
                 }
+            
+            
 
 
 
@@ -484,6 +498,52 @@ AlexaGoogleSearch.prototype.intentHandlers = {
                     console.log("Found Simple answer");
                     speakResults(found);
 
+                }
+            
+            
+                //local results
+                if (!found && $('._axi',body).length>0){
+                    console.log("Found local results");
+                    found="";
+                                                    
+                    var items = $('._axi',body).get().length; // find how many lines there are in name list                
+                    for (var count = 0; count < items; count++) {
+                        
+                        var result = $('._axi',body).eq(count).html();
+                        result = result.replace('</span> <g-review-stars>',' stars </span> <g-review-stars>');
+                        result = result.split(" \u00B7 ").join(""); // get rid of middle dots
+                        result = result.split('<span class="_PXi">').join('. SHORTALEXAPAUSERTN<span class="_PXi">');
+                        result = result.split("</div><div></div><div>").join('. SHORTALEXAPAUSERTN</div><div></div><div>');
+                        result = result.split("</span></span></div><div>").join('. SHORTALEXAPAUSERTN</span></span></div><div>');
+                        
+                        result = result.split("<span data-ved").join('. SHORTALEXAPAUSERTN <span data-ved');
+                        result = result.split("&#xB7").join('. SHORTALEXAPAUSERTN');
+                        result = result.split('<div class="rllt__wrapped">').join('. SHORTALEXAPAUSERTN<div class="rllt__wrapped">');
+                        
+                        if (result.search(/g-review-stars> \(\d+\)/g) >-1 ){
+
+                            var reviewString = result.match(/g-review-stars> \(\d+\)/g);
+
+                            var reviewCount = reviewString[0].match(/(\d+)/g);
+
+                            var replaceString = "g-review-stars> based upon " + reviewCount[0] + " reviews.";
+
+                            result = result.replace(reviewString[0], replaceString)
+                        }
+                        result = entities.decode(striptags(result));
+                        result = result.split("\u00B7").join(""); // get rid of middle dots
+                        result = result.replace(' £ ', ' Low Cost SHORTALEXAPAUSERTN');
+                        result = result.replace(' ££ ', ' Medium Cost SHORTALEXAPAUSERTN');
+                        result = result.replace(' £££ ', ' High Cost SHORTALEXAPAUSERTN');
+                        result = result.split('No reviews').join('. No Reviews. SHORTALEXAPAUSERTN');
+                        result = result.split('  ').join(' ');
+                        result = result.split('  ').join(' ');
+                        result = result.split('. . ').join('. ');
+                        
+                        
+                        found = found + "Result number "  + (count + 1) +": " + result + "ALEXAPAUSE ALEXAPAUSE SHORTALEXAPAUSERTN SHORTALEXAPAUSERTN";
+                    }
+                    speakResults(found);
                 }
 
                 //Definition
@@ -591,7 +651,7 @@ AlexaGoogleSearch.prototype.intentHandlers = {
         response.tell(speechOutput);
     }
 }
-
+// Following code is from bellissimo on pull request 13 as I know nothing about cricket
 // format a cricket score, handles ODIs and T20s differently from test matches
 function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, eventLeague, eventTime) {
     var scoreFirstDeclared = false, scoreSecondDeclared = false, scoreThirdDeclared = false, scoreFourthDeclared = false;
@@ -724,8 +784,8 @@ function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, event
             // for a test, scoreFirst and scoreThird belong to Team1, scoreSecond and scoreFourth to Team2
             if (scoreThird.length == 0 && scoreFourth.length == 0) {
                 // in the first innings
-                if ((scoreFirst.length == 0 || scoreFirst == "Yet to bat") || scoreFirstDeclared || scoreFirstAllOut) {
-                    if (scoreSecond.length == 0 || scoreSecond == "Yet to bat")
+                if (scoreFirst.length == 0 || scoreFirstDeclared || scoreFirstAllOut) {
+                    if (scoreSecond.length == 0)
                         currentScore = teamFirst + " " + scoreFirst;   
                     else
                         currentScore = teamSecond + " " + scoreSecond;
@@ -735,8 +795,8 @@ function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, event
             }
             else {
                 // in the second innings
-                if ((scoreThird.length == 0 || scoreThird == "Yet to bat") || scoreThirdDeclared || scoreThirdAllOut) {
-                    if (scoreFourth.length == 0 || scoreFourth == "Yet to bat")
+                if (scoreThird.length == 0 || scoreThirdDeclared || scoreThirdAllOut) {
+                    if (scoreFourth.length == 0)
                         currentScore = teamFirst + " " + scoreThird;   
                     else
                         currentScore = teamSecond + " " + scoreFourth;
@@ -771,6 +831,192 @@ function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, event
         if (seriesStatus)
             speechOutput += ", " + seriesStatus;
     }
+    
+    return speechOutput;
+}
+
+// format a cricket score, handles ODIs and T20s differently from test matches
+function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, eventLeague, eventTime) {
+    var speechOutput = localeResponse[8];
+    try {
+        var scoreFirstDeclared = false, scoreSecondDeclared = false, scoreThirdDeclared = false, scoreFourthDeclared = false;
+        var scoreFirstAllOut = false, scoreSecondAllOut = false, scoreThirdAllOut = false, scoreFourthAllOut = false;
+        var scoreFirstOvers = 0, scoreSecondOvers = 0;
+        //var innings = $('._OMb>._t>',body).length;
+        //var isTestMatch = (innings == 2); // only a test match has a set of scores for each innings
+        var isT20 = eventLeague.includes("T20");
+        var isODI = eventLeague.includes("ODI");
+        var isTestMatch = !isT20 && !isODI;
+
+        // format the score for innings 1
+        var scoreFirst = $('._OMb>._t>tr>._Hg._if',body).eq(0).text();
+        console.log("First score is: " + scoreFirst);
+        // handle a declared innings
+        if (scoreFirst.includes("d")) {
+            scoreFirst = scoreFirst.replace("d", "");
+            scoreFirstDeclared = true;
+            console.log("First innings declared");
+        }
+        // handle all out
+        if (scoreFirst.includes("/10")) {
+            scoreFirst = scoreFirst.replace("/10", " all out");
+            scoreFirstAllOut = true;
+            console.log("First innings all out");
+        }
+        scoreFirst = scoreFirst.replace("/", " for "); // make the wickets readable
+        var oversExtract = scoreFirst.match(/\(([^)]+)\)/); // extract the number of overs
+        if (oversExtract) {
+            // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
+            var overs = oversExtract[1];
+            scoreFirstOvers = overs;
+            scoreFirst = scoreFirst.replace(/ \(.+\)/g, (scoreFirstDeclared ? " declared" : "") + ((isTestMatch && isItLive) ? " in the first innings" : "") + ", after " + overs + " overs");
+        }
+
+        // format the score for innings 2
+        var scoreSecond = $('._OMb>._t>tr>._Hg._jf',body).eq(0).text();
+        console.log("Second score is: " + scoreSecond);
+        // handle a declared innings
+        if (scoreSecond.includes("d")) {
+            scoreSecond = scoreSecond.replace("d", "");
+            scoreSecondDeclared = true;
+            console.log("Second innings declared");
+        }
+        // handle all out
+        if (scoreSecond.includes("/10")) {
+            scoreSecond = scoreSecond.replace("/10", " all out");
+            scoreSecondAllOut = true;
+            console.log("Second innings all out");
+        }
+        scoreSecond = scoreSecond.replace("/", " for "); // make the wickets readable
+        oversExtract = scoreSecond.match(/\(([^)]+)\)/); // extract the number of overs
+        if (oversExtract) {
+            // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
+            var overs = oversExtract[1];
+            scoreSecondOvers = overs;
+            scoreSecond = scoreSecond.replace(/ \(.+\)/g, (scoreSecondDeclared ? " declared" : "") + ((isTestMatch && isItLive) ? " in the first innings" : "") + ", after " + overs + " overs");
+        }
+
+        // format the score for innings 3 (test match only)
+        var scoreThird = $('._OMb>._t>tr>._Hg._if',body).eq(1).text();
+        if (scoreThird.length > 0)
+            console.log("Third score is: " + scoreThird);
+        // handle a declared innings
+        if (scoreThird.includes("d")) {
+            scoreThird = scoreThird.replace("d", "");
+            scoreThirdDeclared = true;
+            console.log("Third innings declared");
+        }
+        // handle all out
+        if (scoreThird.includes("/10")) {
+            scoreThird = scoreThird.replace("/10", " all out");
+            scoreThirdAllOut = true;
+            console.log("Third innings all out");
+        }
+        scoreThird = scoreThird.replace("/", " for "); // make the wickets readable
+        oversExtract = scoreThird.match(/\(([^)]+)\)/); // extract the number of overs
+        if (oversExtract) {
+            // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
+            var overs = oversExtract[1];
+            scoreThird = scoreThird.replace(/ \(.+\)/g, (scoreThirdDeclared ? " declared" : "") + (isItLive ? " in the second innings" : "") + ", after " + overs + " overs");
+        }
+
+        // format the score for innings 4 (test match only)
+        var scoreFourth = $('._OMb>._t>tr>._Hg._jf',body).eq(1).text();
+        if (scoreFourth.length > 0)
+            console.log("Fourth score is: " + scoreFourth);
+        // handle a declared innings
+        if (scoreFourth.includes("d")) {
+            scoreFourth = scoreFourth.replace("d", "");
+            scoreFourthDeclared = true;
+            console.log("Fourth innings declared");
+        }
+        // handle all out
+        if (scoreFourth.includes("/10")) {
+            scoreFourth = scoreFourth.replace("/10", " all out");
+            scoreFourthAllOut = true;
+            console.log("Fourth innings all out");
+        }
+        scoreFourth = scoreFourth.replace("/", " for "); // make the wickets readable
+        oversExtract = scoreFourth.match(/\(([^)]+)\)/); // extract the number of overs
+        if (oversExtract) {
+            // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
+            var overs = oversExtract[1];
+            scoreFourth = scoreFourth.replace(/ \(.+\)/g, (scoreFourthDeclared ? " declared" : "") + (isItLive ? " in the second innings" : "") + ", after " + overs + " overs");
+        }
+
+        // create the output
+        var matchFormat = isT20 ? "T.Twenty" : isODI ? "One Day International" : "Test Match";
+        if (isItLive) {
+            // format for T20 and ODI is 'Team are xxx/n' or 'Team are xxx/n chasing yyy/n'
+            var currentScore;
+            if (isT20 || isODI) {
+                if (scoreFirst == "Yet to bat")
+                    currentScore = teamSecond + " " + scoreSecond;
+                else if (scoreSecond == "Yet to bat")
+                    currentScore = teamFirst + " " + scoreFirst;
+                else {
+                    if (parseFloat(scoreFirstOvers) > parseFloat(scoreSecondOvers))
+                        currentScore = teamSecond + " " + scoreSecond + ", chasing " + scoreFirst.match(/[0-9]+/)[0];
+                    else
+                        currentScore = teamFirst + " " + scoreFirst + ", chasing " + scoreSecond.match(/[0-9]+/)[0];
+                }
+            }
+
+            // for a test match, only output the score for the team currently batting
+            // involves some convoluted checking of which of the 4 innings are all out or declared
+            if (isTestMatch) {
+                // for a test, scoreFirst and scoreThird belong to Team1, scoreSecond and scoreFourth to Team2
+                if (scoreThird.length == 0 && scoreFourth.length == 0) {
+                    // in the first innings
+                    if ((scoreFirst.length == 0 || scoreFirst == "Yet to bat") || scoreFirstDeclared || scoreFirstAllOut) {
+                        if (scoreSecond.length == 0 || scoreSecond == "Yet to bat")
+                            currentScore = teamFirst + " " + scoreFirst;   
+                        else
+                            currentScore = teamSecond + " " + scoreSecond;
+                    }
+                    else
+                        currentScore = teamFirst + " " + scoreFirst;
+                }
+                else {
+                    // in the second innings
+                    if ((scoreThird.length == 0 || scoreThird == "Yet to bat") || scoreThirdDeclared || scoreThirdAllOut) {
+                        if (scoreFourth.length == 0 || scoreFourth == "Yet to bat")
+                            currentScore = teamFirst + " " + scoreThird;   
+                        else
+                            currentScore = teamSecond + " " + scoreFourth;
+                    }
+                    else
+                        currentScore = teamFirst + " " + scoreThird;
+                }
+            }
+
+            if (status == "Live")
+                // for an 'in play' match just format as 'the current score is'
+                speechOutput = "The current score in the " + matchFormat + " is: " + currentScore;
+            else
+                // for other statuses, format as e.g. 'the score at Drinks is'
+                speechOutput = "The score at " + status + " in the " + matchFormat + " is: " + currentScore;
+        } else {
+            eventTime = eventTime.split(",")[0]; // strip out the time of day
+            var seriesStatus = eventLeague.split("- ")[1]; // strip out the bit which says e.g. Test 2 of 3 (may not be a proper series so could return undefined)
+            if (seriesStatus) {
+                // format is x-y-z where x is the winning side score, y is the losing side score and z is the number of draws
+                // we don't care about draws, so just extract the x-y part and replace the dash with a space for readability
+                var seriesScore = seriesStatus.match(/[0-9]-[0-9]/)[0];
+                seriesStatus = seriesStatus.replace(/[0-9]-[0-9]-[0-9]/, seriesScore).replace("-", " ");
+            }
+            var result = $('._Fc>._Pc',body).text(); //  extract the concise result
+
+            if (scoreThird.length > 0)
+                scoreFirst = scoreFirst + " and " + scoreThird;
+            if (scoreFourth.length > 0)
+                scoreSecond = scoreSecond + " and " + scoreFourth;
+            speechOutput = "The final score in the " + matchFormat + ", " + eventTime + " was: " + teamFirst + " " + scoreFirst + ", " + teamSecond + " " + scoreSecond + ". " + result;
+            if (seriesStatus)
+                speechOutput += ", " + seriesStatus;
+        }
+    }
+    catch(err) {}
     
     return speechOutput;
 }
