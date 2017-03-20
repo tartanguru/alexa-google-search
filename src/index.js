@@ -869,7 +869,9 @@ function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, event
             // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
             var overs = oversExtract[1];
             scoreFirstOvers = overs;
-            scoreFirst = scoreFirst.replace(/ \(.+\)/g, (scoreFirstDeclared ? " declared" : "") + ((isTestMatch && isItLive) ? " in the first innings" : "") + ", after " + overs + " overs");
+            scoreFirst = scoreFirst.replace(/ \(.+\)/g, (scoreFirstDeclared ? " declared" : "") + ((isTestMatch && isItLive) ? " in the first innings" : ""));
+            if (isItLive)
+                scoreFirst += ", after " + overs + " overs";
         }
 
         // format the score for innings 2
@@ -893,7 +895,9 @@ function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, event
             // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
             var overs = oversExtract[1];
             scoreSecondOvers = overs;
-            scoreSecond = scoreSecond.replace(/ \(.+\)/g, (scoreSecondDeclared ? " declared" : "") + ((isTestMatch && isItLive) ? " in the first innings" : "") + ", after " + overs + " overs");
+            scoreSecond = scoreSecond.replace(/ \(.+\)/g, (scoreSecondDeclared ? " declared" : "") + ((isTestMatch && isItLive) ? " in the first innings" : ""));
+            if (isItLive)
+                scoreSecond += ", after " + overs + " overs";
         }
 
         // format the score for innings 3 (test match only)
@@ -917,7 +921,9 @@ function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, event
         if (oversExtract) {
             // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
             var overs = oversExtract[1];
-            scoreThird = scoreThird.replace(/ \(.+\)/g, (scoreThirdDeclared ? " declared" : "") + (isItLive ? " in the second innings" : "") + ", after " + overs + " overs");
+            scoreThird = scoreThird.replace(/ \(.+\)/g, (scoreThirdDeclared ? " declared" : "") + (isItLive ? " in the second innings" : ""));
+            if (isItLive)
+                scoreThird += ", after " + overs + " overs";
         }
 
         // format the score for innings 4 (test match only)
@@ -941,7 +947,9 @@ function formatCricketScore(body, teamFirst, teamSecond, isItLive, status, event
         if (oversExtract) {
             // make the score more readable by handling 'all out', 'declared' and 'number of overs' nicely
             var overs = oversExtract[1];
-            scoreFourth = scoreFourth.replace(/ \(.+\)/g, (scoreFourthDeclared ? " declared" : "") + (isItLive ? " in the second innings" : "") + ", after " + overs + " overs");
+            scoreFourth = scoreFourth.replace(/ \(.+\)/g, (scoreFourthDeclared ? " declared" : "") + (isItLive ? " in the second innings" : ""));
+            if (isItLive)
+                scoreFourth += ", after " + overs + " overs";
         }
 
         // create the output
