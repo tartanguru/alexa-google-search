@@ -4,8 +4,6 @@ A highly unofficial alexa skill for google search
 
 # Version 1.5
 
-** IMPORTANT - Ensure you select node.js 6.10 at step 7!! Other instructions on line will refer to node.js 4.3 which has been depreciated by Amazon**
-
 This version fixes the following issues in the original code:-
 
 1. Localisation and German support - the skill will now automatically detect which region it is running in and set the search and prompts into either US/UK English or German as appropriate. Make sure your skill and device are set to the SAME language
@@ -91,7 +89,7 @@ To run the skill you need to do three things:-
 4. Skip the Select Blueprint Tab and just click on the "Configure Triggers" Option on the left hand side
 5. On the Cofigure Triggers tab Click the dotted box and select "Alexa Skills Kit". Click Next  
 6. Name the Lambda Function "google".
-7. Select the runtime as node.js 6.10 **Note the instructions on other sites may refer to node.js 4.3 - this is no longer supported by Amazon and will result in a non functioing skill**
+7. Select the default runtime node.js 6.10 **Note node.js 4.3 will still work but future version may rely on 6.10 features so best to use 6.10 to aid future updates. EDGE node.js 4.3 will not work**
 9. Select Code entry type as "Upload a .ZIP file". Go to the folder where you unzipped the files you downloaded from Github. Open the src folder, Select Archive.zip and click open.  **Do not upload the zip file you downloaded from github - only the archive.zip contained within it**
 10. Keep the Handler as index.handler (this refers to the main js file in the zip).
 11. Create a basic execution role by slecting "Create new role from template(s)" in the Role box, then name the role "lambda_basic_execution” in the role name box and click create. (or Choose use an existing role if you have deployed skills previously and then select "lambda_basic_executuion" from the existing role dropdown ).
