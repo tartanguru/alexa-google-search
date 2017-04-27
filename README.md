@@ -139,6 +139,36 @@ To run the skill you need to do three things:-
     ```
     who is the queen
     why is the sky blue
+    how old become dogs
+    where is hamburg
+    what is christmas
+    when is easter
+    what are mice
+    what does bleach do
+    can you eat grass
+    is there a god
+    are bats black
+    whats the biggest planet
+    can dolphins swim
+    did giraffes go extinct
+    do porcupines sleep
+    whats two plus two
+    will bees be killed
+    could a woodchuck chuck wood
+    could flamingos fly
+    are oceans wet
+    are trees big
+    does korea have nukes
+    should you drink milk
+    should trucks smoke
+    capital of new york
+    inventor of television
+    what time does costco close
+    how far away is the moon
+    how many oceans are there
+    who are the presidents children
+    why do stars suddenly appear
+    where are the nearest campsites
     ```
 
 15. Copy the text below amd paste them into the Sample Uterances box.
