@@ -123,6 +123,10 @@ AlexaGoogleSearch.prototype.intentHandlers = {
               cardOutputText = cardOutputText.split('SHORTALEXAPAUSE').join('') // remove pauses from card text
               cardOutputText = cardOutputText.split('ALEXAPAUSE').join('\r\n') // remove pauses from card text
 
+            // strip trailing 'Wikipedia' from the end of speech output (addresses #10)
+            speechOutputTemp = speechOutputTemp.replace(/. Wikipedia\b/g, '.') // Remove Wikipedia from the end of a string (when it is after a full stop)
+            cardOutputText = cardOutputText.replace(/. Wikipedia\b/g, '.')
+
 			speechOutputTemp = speechOutputTemp.split('.').join(". ") // Assume any remaining dot are concatonated sentances so turn them into full stops with a pause afterwards
 			var speechOutput = speechOutputTemp.replace(/DECIMALPOINT/g,'.') // Put back decimal points
             
