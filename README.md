@@ -2,6 +2,10 @@
 
 A highly unofficial alexa skill for google search
 
+
+### THIS SKILL IS NO LONGER BEING DEVELOPED AS IT AS BEEN SUPERCEEDED BY MY NEW SKILL WHICH UTILISES THE GOOGLE ASSISTANT API:-
+### https://github.com/tartanguru/alexa-assistant
+
 # Version 1.5
 
 This version fixes the following issues in the original code:-
