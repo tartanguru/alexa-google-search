@@ -2,9 +2,25 @@
 
 A highly unofficial alexa skill for google search
 
+<br />
+<br />
+<br />
+<br />
+<br />
 
-### THIS SKILL IS NO LONGER BEING DEVELOPED AS IT AS BEEN SUPERCEEDED BY MY NEW SKILL WHICH UTILISES THE GOOGLE ASSISTANT API:-
-### https://github.com/tartanguru/alexa-assistant
+
+# THIS SKILL IS NO LONGER BEING DEVELOPED/SUPPORTED AS IT AS BEEN SUPERCEEDED BY MY NEW SKILL WHICH UTILISES THE GOOGLE ASSISTANT API:-  https://github.com/tartanguru/alexa-assistant
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+
 
 # Version 1.5
 
