@@ -47,6 +47,8 @@ var localeResponseDE = [
 var localeGoogleENGB = ["http://www.google.co.uk/search?q=","&hl=en-GB"];
 var localeGoogleDE = ["http://www.google.com/search?q=","&hl=de"];
 var localeGoogleENUS = ["http://www.google.com/search?q=",""];
+var localeGoogleENCA = ["http://www.google.ca/search?q=",""];
+var localeGoogleENIN = ["http://www.google.co.in/search?q=",""];
 
 var sessionLocale = '';
 
@@ -452,16 +454,35 @@ exports.handler = function(event, context) {
         localeGoogle = localeGoogleDE;
         console.log("Setting locale to de-DE");
     }   
-    if (sessionLocale == 'en-GB') {
+    else if (sessionLocale == 'en-GB') {
         localeResponse = localeResponseEN;
         localeGoogle = localeGoogleENGB; 
         console.log("Setting locale to en-GB");
     }
-    if (sessionLocale == 'en-US') {
+    else if (sessionLocale == 'en-US') {
         localeResponse = localeResponseEN;
         localeGoogle = localeGoogleENUS; 
         console.log("Setting locale to en-US");
     } 
+    
+    else if (sessionLocale == 'en-CA') {
+        localeResponse = localeResponseEN;
+        localeGoogle = localeGoogleENCA; 
+        console.log("Canada - Setting locale to en-CA");
+    } 
+    
+    else if (sessionLocale == 'en-IN') {
+        localeResponse = localeResponseEN;
+        localeGoogle = localeGoogleENIN; 
+        console.log("Canada - Setting locale to en-IN");
+    } 
+    else {
+        localeResponse = localeResponseEN;
+        localeGoogle = localeGoogleENUS; 
+        console.log("Unknown locale - Setting locale to en-US");
+    }
+    
+    
     
 	AlexaGoogleSearchHelper.execute(event, context);
 }
